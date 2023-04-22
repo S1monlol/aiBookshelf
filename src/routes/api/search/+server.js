@@ -20,7 +20,7 @@ export async function GET({ url }) {
     let response = await fetch('https://api.openai.com/v1/chat/completions', requestOptions)
     let data = await response.json()
 
-    console.log(data)
+    // console.log(data)
 
 
     return new Response(
