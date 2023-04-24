@@ -1,5 +1,46 @@
 <script>
-    let books;
+    // let books;
+    let books = [
+        {
+            title: "Testing JavaScript",
+            author: "Liang Yuxian Eugene",
+            description:
+                "This book is the ultimate guide to writing automated tests for your JavaScript applications. It covers everything from unit testing to end-to-end testing and shows how to use popular testing frameworks like Jest, Mocha, and Cypress.",
+        },
+        {
+            title: "JavaScript Testing with Jasmine",
+            author: "Evan Hahn",
+            description:
+                "This book is a comprehensive guide to using the Jasmine testing framework for JavaScript. It covers everything from setting up your testing environment to writing complex tests for your applications.",
+        },
+        {
+            title: "Test-Driven JavaScript Development",
+            author: "Christian Johansen",
+            description:
+                "This book teaches you how to write better JavaScript code by using the test-driven development (TDD) approach. It covers all the major testing frameworks like Jasmine, QUnit, and Mocha and shows you how to apply TDD to your JavaScript projects.",
+        },
+        {
+            title: "Effective JavaScript Testing",
+            author: "Lionel Osipov",
+            description:
+                "This book shows you how to design and implement effective testing strategies for your JavaScript applications. It covers everything from unit testing to integration testing and provides practical examples and tips for improving the quality of your code.",
+        },
+        {
+            title: "JavaScript Testing Recipes",
+            author: "Mark Ethan Trostler",
+            description:
+                "This book provides you with practical recipes for testing your JavaScript applications. It covers topics like mocking, spies, and stubs and shows how to use popular testing frameworks like Jasmine and Karma.",
+        },
+    ];
+
+    // add an empty sources array to each book
+    books.forEach((book) => {
+        book.sources = [];
+    });
+
+    let bookSources = getSources(books);
+
+    getSources(books);
 
     const addWord = () => {
         const topics = [
@@ -75,6 +116,44 @@
         // addWord();
     };
 
+    async function getSources(books) {
+        books.forEach((book) => {
+            book.sources = [];
+
+            const googleBooks = async () => {
+                let results = await fetch(
+                    `https://www.googleapis.com/books/v1/volumes?q=${book.title}+inauthor:${book.author}`
+                );
+
+                let body = await results.json();
+
+                // console.log(body);
+
+                // console.log(body.totalItems);
+                if (body.totalItems > 0) {
+                    console.log("Pushing google books");
+                    book.sources.push({
+                        title: "Google Books",
+                        url: body.items[0].volumeInfo.infoLink,
+                    });
+                }
+            };
+
+            googleBooks();
+
+            // book.sources.push({
+            //     title: "Amazon",
+            //     url: "https://www.amazon.com/s?k=" + book.title,
+            // });
+        });
+        console.log(books);
+
+        // return a promise, then resolve it with books 
+        return new Promise((resolve) => {
+            resolve(books);
+        });
+    }
+
     async function dotsAnimation() {
         // hide all demo elements by class
         const demo = document.getElementsByClassName("demo");
@@ -135,6 +214,7 @@
         setTimeout(() => {
             const form = document.querySelector("form");
             form.addEventListener("submit", handleSearch); // add the event listener to the form
+            getSources(books);
 
             removeWord();
         }, 1000);
@@ -169,12 +249,35 @@
 
     {#if books}
         <div id="book-results">
-            {#each books as book}
+            {#each books as book, index}
                 <div class="book">
                     <div class="book">
                         <h2>{book.title}</h2>
                         <p>{book.author}</p>
                         <p>{book.description}</p>
+                        <div class="sources">
+                            <h3>Sources</h3>
+
+                            {#await bookSources then promise}
+                                {#if promise[index]}
+                                    {console.log(Object.values(promise[index].sources))}
+                                    <div>
+                                        <h3>Sources</h3>
+                                        {#if promise[index].length === 0}
+                                            <p>No sources found</p>
+                                        {:else}
+                                            <p>
+                                                <a href={promise[index][0]}
+                                                    >{promise[index][0]}</a
+                                                >
+                                            </p>
+                                        {/if}
+                                    </div>
+                                {:else}
+                                    <p>Loading...</p>
+                                {/if}
+                            {/await}
+                        </div>
                     </div>
                 </div>
             {/each}
@@ -247,5 +350,27 @@
     }
     p {
         color: white;
+    }
+
+    .sources {
+        margin-top: 10px;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+    }
+
+    .sources h3 {
+        font-size: 1.2rem;
+        margin-top: 0;
+    }
+
+    .sources p {
+        margin: 5px 0;
+    }
+
+    .sources a {
+        color: #0077cc;
+        text-decoration: none;
     }
 </style>
