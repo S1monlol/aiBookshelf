@@ -4,8 +4,7 @@ Welcome to AI Bookshelf, your AI-powered personal book recommendation engine. Th
 
 # Getting Started
 For both install paths, you need to have a .env in the base dir with 
-`OPENAI_KEY=`  
-with your openai key included 
+`OPENAI_KEY=`    
 
 ## Local running
 
