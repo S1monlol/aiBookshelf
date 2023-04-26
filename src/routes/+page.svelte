@@ -1,7 +1,8 @@
 <script>
     import { onMount } from "svelte";
 
-    let books;
+    var books;
+    let booksDone;
     // let books = [
     //     {
     //         title: "Testing JavaScript",
@@ -109,23 +110,24 @@
         // addWord();
     };
 
-    async function getSource(book) {
-        book.sources = [];
-
+    async function getInfo(book) {
         let results = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=${book.title}+inauthor:${book.author}`
+            `https://www.googleapis.com/books/v1/volumes?q=${book.t}+inauthor:${book.a}`
         );
 
         let body = await results.json();
-
+        let source;
+        let description;
         if (body.totalItems > 0) {
-            console.log(body.items[0].volumeInfo.infoLink);
-            book.sources.push({
-                title: "Google Books",
+            source = {
+                t: "Google Books",
                 url: body.items[0].volumeInfo.infoLink,
-            });
+            };
+            description = body.items[0].searchInfo.textSnippet.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+            
         }
-        return book;
+
+        return Promise.resolve({ s: source, d: description });
     }
 
     async function dotsAnimation() {
@@ -166,53 +168,37 @@
 
         console.log(response);
 
-        console.log(body)
+        console.log(body);
 
         console.log(body.data.choices[0].message.content);
 
         // convert string to object
-        let boooks = JSON.parse(body.data.choices[0].message.content);
+        books = JSON.parse(body.data.choices[0].message.content);
 
-        // let boooks = [
-        //     {
-        //         title: "The Testaments",
-        //         author: "Margaret Atwood",
-        //         description:
-        //             "The sequel to Atwood's The Handmaid's Tale, The Testaments follows the lives of three women in the dystopian republic of Gilead.",
-        //     },
-        //     {
-        //         title: "This Is How You Lose the Time War",
-        //         author: "Amal El-Mohtar and Max Gladstone",
-        //         description:
-        //             "A time-traveling epistolary love story between agents on opposing sides of a war to control the timeline.",
-        //     },
-        //     {
-        //         title: "The Midnight Library",
-        //         author: "Matt Haig",
-        //         description:
-        //             "After her suicide attempt, Nora finds herself in a library between life and death, where she is given the chance to try out different lives that could have been.",
-        //     },
-        //     {
-        //         title: "Such a Fun Age",
-        //         author: "Kiley Reid",
-        //         description:
-        //             "When Emira, a young Black babysitter, is accused of kidnapping the white child she is watching, her employer, Alix, tries to make amends, but things quickly get complicated.",
-        //     },
-        //     {
-        //         title: "The Dutch House",
-        //         author: "Ann Patchett",
-        //         description:
-        //             "The story of siblings Danny and Maeve and their obsession with their childhood home, the Dutch House, which they were forced to leave when their stepmother arrived.",
-        //     },
-        // ];
+        books.forEach((element) => {
+            element.sources = [];
+        });
 
-        for (let i = 0; i < boooks.length; i++) {
-            await getSource(boooks[i]);
+        console.log(JSON.stringify(books));
+
+        for (let i = 0; i < books.length; i++) {
+            let info = getInfo(books[i]);
+            let source = info.then((info) => {
+                return info.s;
+            });
+            let description = info.then((info) => {
+                return info.d;
+            });
+
+            books[i].sources.push(source);
+            books[i].description = description;
+            console.log(books[i].sources);
+            console.log(books[i].description);
         }
 
-        console.log(boooks);
+        booksDone = true;
 
-        books = boooks;
+        // console.log(books);
 
         // hide loading message
         loading.style.display = "none";
@@ -262,20 +248,32 @@
         </form>
     </div>
 
-    {#if books}
+    {#if booksDone}
         <div id="book-results">
-            {#each books as book, index}
+            {#each books as book}
                 <div class="book">
                     <div class="book">
-                        <h2>{book.title}</h2>
-                        <p>{book.author}</p>
-                        <p>{book.description}</p>
+                        <h2>{book.t}</h2>
+                        <p>{book.a}</p>
+                        {#await book.description}
+                            <p>Loading description...</p>
+                        {:then description}
+                            {description}
+                        {/await}
                         <div class="sources">
                             <div>
                                 <h3>Sources</h3>
-                                {#each book.sources as source}
-                                    <a href={source.url}>{source.title}</a>
-                                {/each}
+                                {#await Promise.all(book.sources)}
+                                    <p>Loading sources...</p>
+                                {:then sources}
+                                    {#each sources as source}
+                                        <a href={source.url} target="_blank"
+                                            >{source.t}</a
+                                        >
+                                    {/each}
+                                {:catch error}
+                                    <p>Error: {error.message}</p>
+                                {/await}
                             </div>
                         </div>
                     </div>
